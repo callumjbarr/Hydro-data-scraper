@@ -1,0 +1,33 @@
+from selenium import webdriver
+from selenium.webdriver.firefox.service import Service
+from selenium.webdriver.firefox.options import Options
+import json
+import time
+import pandas as pd
+from datetime import datetime
+
+driver = webdriver.Firefox()
+driver.get("https://www.emi.ea.govt.nz/Environment/Reports/3UN1KD?DateFrom=20100201&DateTo=20261231&RegionCode=NZ&Show=All&seriesFilter=2&_rsdr=ALL&_si=fr|1089,frc|D,v|3")
+
+time.sleep(5)
+
+data_script = driver.execute_script("return JSON.stringify($reportInfo);")
+
+data = json.loads(data_script)
+
+controlledStorage = next(series for series in data["series"] if series["name"] == "Controlled storage")
+dataSet = controlledStorage["data"]
+
+dataDf = pd.DataFrame(dataSet, columns=["timestamp", "controlledStorage"])
+
+dataDf['date'] = pd.to_datetime(dataDf['timestamp'], unit='ms')
+dataDf = dataDf[['date', 'controlledStorage']]
+
+finalData = dataDf.iloc[:-1][['date', 'controlledStorage']]
+
+finalData.to_csv('C:/Users/cb241/OneDrive/Documents/4 - Projects/Electricity Cointegration/hydroData.csv', index=False)
+
+
+
+driver.quit()
+print('done')
